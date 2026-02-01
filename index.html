@@ -1,1 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Partial Quotients Playground</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#f4f6f8; padding:20px; }
+  h1 { color:#2c3e50; }
+  .box { background:white; padding:15px; border-radius:10px; max-width:650px; margin-bottom:15px; }
+  input { width:90px; padding:5px; font-size:16px; }
+  button { padding:8px 12px; font-size:16px; margin:4px; cursor:pointer; }
+  .error { color:red; }
+  .log { background:#eef; padding:10px; border-radius:8px; min-height:80px; font-family:monospace; }
+  .bar { height:20px; background:#3498db; margin:5px 0; border-radius:5px; }
+  .hidden { display:none; }
+  .problem { background:#fcf8e8; padding:10px; border-radius:8px; }
+</style>
+</head>
+<body>
+
+<h1>Partial Quotients Playground</h1>
+
+<div class="box">
+  <strong>Choose a Mode</strong><br><br>
+  <button onclick="randomProblem()">Number Problem</button>
+  <button onclick="wordProblem()">Word Problem</button>
+</div>
+
+<div class="box hidden" id="problemBox">
+  <strong>Word Problem</strong>
+  <div class="problem" id="problemText"></div><br>
+  <button onclick="revealNumbers()">Show the Numbers</button>
+</div>
+
+<div class="box hidden" id="setupBox">
+  <strong>Set Up</strong><br><br>
+  Dividend:
+  <input id="dividend" type="number">
+  Divisor:
+  <input id="divisor" type="number"><br><br>
+
+  <label><input type="checkbox" id="remaindersOn" checked> Allow remainders</label>
+  <label><input type="checkbox" id="teacherMode"> Teacher mode</label><br><br>
+
+  <button onclick="start()">Start Dividing</button>
+  <div id="setupError" class="error"></div>
+</div>
+
+<div class="box hidden" id="workBox">
+  <strong>Current Amount:</strong> <span id="current"></span><br><br>
+
+  <button onclick="useChunk(10)">×10</button>
+  <button onclick="useChunk(5)">×5</button>
+  <button onclick="useChunk(2)">×2</button>
+  <button onclick="useChunk(1)">×1</button>
+  <button onclick="hint()">Hint</button>
+
+  <div id="chunkError" class="error"></div><br>
+
+  <strong>Visual Model:</strong>
+  <div id="bars"></div><br>
+
+  <strong>Work So Far:</strong>
+  <div class="log" id="log"></div>
+
+  <strong>Total Quotient:</strong> <span id="quotient">0</span>
+</div>
+
+<script>
+let current, divisor, quotient;
+let allowRemainders, teacher;
+let hiddenDividend, hiddenDivisor;
+
+const wordProblems = [
+  d => `A school collected ${d} books to donate equally to ${hiddenDivisor} classrooms. How many books will each classroom get?`,
+  d => `${d} students are going on field trips. They are placed into groups of ${hiddenDivisor}. How many groups are there?`,
+  d => `A factory made ${d} pencils. They are packed ${hiddenDivisor} pencils per box. How many boxes are needed?`,
+  d => `A library has ${d} pages to read over ${hiddenDivisor} days. How many pages should be read each day?`
+];
+
+function randomProblem() {
+  problemBox.classList.add("hidden");
+  setupBox.classList.remove("hidden");
+  dividend.value = Math.floor(Math.random() * 9000) + 100;
+  divisor.value = Math.floor(Math.random() * 9) + 1;
+}
+
+function wordProblem() {
+  hiddenDividend = Math.floor(Math.random() * 9000) + 100;
+  hiddenDivisor = Math.floor(Math.random() * 9) + 1;
+
+  const template = wordProblems[Math.floor(Math.random() * wordProblems.length)];
+  problemText.textContent = template(hiddenDividend);
+
+  problemBox.classList.remove("hidden");
+  setupBox.classList.add("hidden");
+  workBox.classList.add("hidden");
+}
+
+function revealNumbers() {
+  dividend.value = hiddenDividend;
+  divisor.value = hiddenDivisor;
+  setupBox.classList.remove("hidden");
+}
+
+function start() {
+  const d = Number(dividend.value);
+  const v = Number(divisor.value);
+  setupError.textContent = "";
+
+  if (d < 100 || d > 9999) return setupError.textContent = "Dividend must be 100–9,999.";
+  if (v < 1 || v > 9) return setupError.textContent = "Divisor must be 1–9.";
+
+  current = d;
+  divisor = v;
+  quotient = 0;
+  allowRemainders = remaindersOn.checked;
+  teacher = teacherMode.checked;
+
+  document.getElementById("current").textContent = current;
+  document.getElementById("quotient").textContent = quotient;
+  log.textContent = "";
+  bars.innerHTML = "";
+
+  workBox.classList.remove("hidden");
+}
+
+function useChunk(mult) {
+  const product = divisor * mult;
+  chunkError.textContent = "";
+
+  if (product > current) {
+    chunkError.textContent = "That chunk is too big.";
+    return;
+  }
+
+  current -= product;
+  quotient += mult;
+
+  addBar(product);
+  log.textContent += `${divisor} × ${mult} = ${product}\nRemaining: ${current}\n\n`;
+
+  if (teacher) {
+    log.textContent += `[Teacher] Chunk used: ${mult}\n\n`;
+  }
+
+  document.getElementById("current").textContent = current;
+  document.getElementById("quotient").textContent = quotient;
+
+  if (current < divisor) {
+    log.textContent += `DONE!\nRemainder: ${current}`;
+  }
+}
+
+function hint() {
+  if (current >= divisor * 10) chunkError.textContent = "Hint: Try ×10";
+  else if (current >= divisor * 5) chunkError.textContent = "Hint: Try ×5";
+  else chunkError.textContent = "Hint: Try ×1 or ×2";
+}
+
+function addBar(amount) {
+  const bar = document.createElement("div");
+  bar.className = "bar";
+  bar.style.width = Math.max(20, (amount / Number(dividend.value)) * 500) + "px";
+  bars.appendChild(bar);
+}
+</script>
+
+</body>
+</html>
 
